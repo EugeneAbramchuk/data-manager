@@ -2,8 +2,6 @@ package net.datamanager.application;
 
 import io.codearte.jfairy.Fairy;
 import io.codearte.jfairy.producer.person.Person;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;

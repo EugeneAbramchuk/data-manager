@@ -125,6 +125,7 @@ public class VaadinUI extends UI {
             verticalLayout.addComponent(filter);
             verticalLayout.addComponent(customersGrid);
             verticalLayout.addComponent(addNewButton);
+            verticalLayout.addComponent(editor);
 
             customersGrid.setHeight(90, Unit.PERCENTAGE);
             verticalLayout.setExpandRatio(customersGrid, 1);
