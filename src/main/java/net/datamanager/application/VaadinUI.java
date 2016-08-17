@@ -1,5 +1,8 @@
 package net.datamanager.application;
 
+import com.vaadin.data.Item;
+import com.vaadin.data.util.IndexedContainer;
+import io.codearte.jfairy.producer.person.Person;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
@@ -51,7 +54,6 @@ public class VaadinUI extends UI {
 
     @Override
     protected void init(VaadinRequest request) {
-        // build layout
         HorizontalLayout horizontalLayout = new HorizontalLayout();
         horizontalLayout.addStyleName("outlined");
         horizontalLayout.setSizeFull();
@@ -62,6 +64,7 @@ public class VaadinUI extends UI {
         generateCustomerControlFrame(horizontalLayout);
         generateVisualizationByAgeFrame(horizontalLayout);
         generateVisualizationBySexFrame(horizontalLayout);
+        recalculateVisualisationData();
 
         setContent(horizontalLayout);
     }
@@ -79,7 +82,7 @@ public class VaadinUI extends UI {
         horizontalLayout.setExpandRatio(visualisationGridByAge, 1);
         visualisationGridByAge.setWidth(100, Unit.PERCENTAGE);
         visualisationGridByAge.setHeight(100, Unit.PERCENTAGE);
-        visualisationGridByAge.setColumns("Age Group", "Count");
+        visualisationGridByAge.setColumns("Age", "Count");
     }
 
     private void generateVisualizationBySexFrame(HorizontalLayout horizontalLayout) {
@@ -88,6 +91,11 @@ public class VaadinUI extends UI {
         visualisationGridBySex.setWidth(100, Unit.PERCENTAGE);
         visualisationGridBySex.setHeight(100, Unit.PERCENTAGE);
         visualisationGridBySex.setColumns("Sex", "Count");
+    }
+
+    private void recalculateVisualisationData() {
+        countCustomersByAgeGroup();
+        countCustomersBySex();
     }
 
     private void listCustomers(String text) {
@@ -101,10 +109,35 @@ public class VaadinUI extends UI {
         }
     }
 
-//    private void countCustomersBySex() {
-//        visualisationGridBySex.setContainerDataSource(
-//                    new BeanItemContainer(List.class, repo.countBySex()));
-//    }
+    private void countCustomersBySex() {
+        List<Object[]> list = repo.countBySex();
+        IndexedContainer container = new IndexedContainer();
+        container.addContainerProperty("Sex", Person.Sex.class, "");
+        container.addContainerProperty("Count", Long.class, 0);
+
+        for (Object[] o : list) {
+            Item item = container.getItem(container.addItem());
+            item.getItemProperty("Sex").setValue(o[0]);
+            item.getItemProperty("Count").setValue(o[1]);
+        }
+
+        visualisationGridBySex.setContainerDataSource(container);
+    }
+
+    private void countCustomersByAgeGroup() {
+        List<Object[]> list = repo.countByAgeGroup();
+        IndexedContainer container = new IndexedContainer();
+        container.addContainerProperty("Age", String.class, "");
+        container.addContainerProperty("Count", Long.class, 0);
+
+        for (Object[] o : list) {
+            Item item = container.getItem(container.addItem());
+            item.getItemProperty("Age").setValue(o[0]);
+            item.getItemProperty("Count").setValue(o[1]);
+        }
+
+        visualisationGridByAge.setContainerDataSource(container);
+    }
 
     private CustomerControl getCustomerControl() {
         if (customerControl == null ) {
@@ -126,6 +159,7 @@ public class VaadinUI extends UI {
             verticalLayout.addComponent(customersGrid);
             verticalLayout.addComponent(addNewButton);
             verticalLayout.addComponent(editor);
+            editor.setVisible(false);
 
             customersGrid.setHeight(90, Unit.PERCENTAGE);
             verticalLayout.setExpandRatio(customersGrid, 1);
@@ -157,6 +191,7 @@ public class VaadinUI extends UI {
 
             // Listen changes made by the editor, refresh data from backend
             editor.setChangeHandler(() -> {
+                recalculateVisualisationData();
                 editor.setVisible(false);
                 listCustomers(filter.getValue());
             });

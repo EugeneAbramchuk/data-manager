@@ -3,9 +3,9 @@ package net.datamanager.application;
 import io.codearte.jfairy.producer.person.Person;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "customer")
 public class Customer {
 
     @Id

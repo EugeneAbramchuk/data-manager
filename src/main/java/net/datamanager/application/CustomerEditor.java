@@ -1,6 +1,10 @@
 package net.datamanager.application;
 
 
+import com.vaadin.data.Validator;
+import com.vaadin.data.validator.RegexpValidator;
+import com.vaadin.ui.*;
+import io.codearte.jfairy.producer.person.Person;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.vaadin.data.fieldgroup.BeanFieldGroup;
@@ -8,11 +12,10 @@ import com.vaadin.event.ShortcutAction;
 import com.vaadin.server.FontAwesome;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.spring.annotation.UIScope;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.CssLayout;
-import com.vaadin.ui.TextField;
-import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.ValoTheme;
+
+import static io.codearte.jfairy.producer.person.Person.Sex.FEMALE;
+import static io.codearte.jfairy.producer.person.Person.Sex.MALE;
 
 @SpringComponent
 @UIScope
@@ -28,6 +31,8 @@ public class CustomerEditor extends VerticalLayout {
     /* Fields to edit properties in Customer entity */
     private TextField firstName = new TextField("First name");
     private TextField lastName = new TextField("Last name");
+    private NativeSelect sex = new NativeSelect("Sex");
+    private TextField age = new TextField("Age");
 
     /* Action buttons */
     private Button save = new Button("Save", FontAwesome.SAVE);
@@ -39,7 +44,7 @@ public class CustomerEditor extends VerticalLayout {
     public CustomerEditor(CustomerRepository repository) {
         this.repository = repository;
 
-        addComponents(firstName, lastName, actions);
+        addComponents(firstName, lastName, sex, age, actions);
 
         // Configure and style components
         setSpacing(true);
@@ -47,10 +52,49 @@ public class CustomerEditor extends VerticalLayout {
         save.setStyleName(ValoTheme.BUTTON_PRIMARY);
         save.setClickShortcut(ShortcutAction.KeyCode.ENTER);
 
+        markFieldsRequired();
+
         // wire action buttons to save, delete and reset
-        save.addClickListener(e -> repository.save(customer));
-        delete.addClickListener(e -> repository.delete(customer));
-        cancel.addClickListener(e -> editCustomer(customer));
+        save.addClickListener(e -> handleSaveCustomer(customer));
+        delete.addClickListener(e -> handleDeleteCustomer(customer));
+        cancel.addClickListener(e -> handleCloseEditDialog());
+    }
+
+    private void markFieldsRequired() {
+        firstName.setRequired(true);
+        lastName.setRequired(true);
+        sex.setRequired(true);
+        sex.addItems(Person.Sex.values());
+        age.setRequired(true);
+    }
+
+    private void handleSaveCustomer(Customer customer) {
+        if (areFieldsValid()) {
+            repository.save(customer);
+            setVisible(false);
+        }
+    }
+
+    private boolean areFieldsValid() {
+        try {
+            firstName.validate();
+            lastName.validate();
+            sex.validate();
+            age.validate();
+        }
+        catch (Validator.EmptyValueException e) {
+            Notification.show("Unable to save a customer: please fill all the required fields.");
+            return false;
+        }
+        return true;
+    }
+
+    private void handleDeleteCustomer(Customer customer) {
+        repository.delete(customer);
+        setVisible(false);
+    }
+
+    private void handleCloseEditDialog() {
         setVisible(false);
     }
 
@@ -83,8 +127,7 @@ public class CustomerEditor extends VerticalLayout {
     }
 
     public void setChangeHandler(ChangeHandler h) {
-        // ChangeHandler is notified when either save or delete
-        // is clicked
+        // ChangeHandler is notified when either save or delete is clicked
         save.addClickListener(e -> h.onChange());
         delete.addClickListener(e -> h.onChange());
     }
